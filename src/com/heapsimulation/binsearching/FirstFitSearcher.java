@@ -9,7 +9,7 @@ public class FirstFitSearcher implements IBinSearcher {
 
 
     @Override
-    public int GetFreeBlockIndex(int size, int[] binStartIndices, ChunkReader traverser) {
+    public int getFreeChunkIndex(int size, int[] binStartIndices, ChunkReader chunkReader) {
         return 0;
     }
 }

@@ -7,31 +7,41 @@ public class ChunkReader {
         this.memory = memory;
     }
 
-    public int GetSize(int chunkIndex){
+    public int getSize(int chunkIndex){
         return 0;
     }
 
-    public int GetPrevSize(int chunkIndex){
+    public int getPrevSize(int chunkIndex){
         return 0;
     }
 
-    public boolean IsFree(int chunkIndex){
+    public boolean isFree(int chunkIndex){
         return false;
     }
 
-    public int GetNextChunkIndex(int chunkIndex){
+    public int getNextChunkIndex(int chunkIndex){
         return 0;
     }
 
-    public int GetPrevChunkIndex(int chunkIndex){
+    public int getPrevChunkIndex(int chunkIndex){
         return 0;
     }
 
-    public int GetBackwardFreeIndex(int chunkIndex){
+    public int getBackwardFreeIndex(int chunkIndex){
         return 0;
     }
 
-    public int GetForwardFreeIndex(int chunkIndex){
+    public int getForwardFreeIndex(int chunkIndex){
         return 0;
+    }
+
+    public boolean hasEnoughChunkSpace(int chunkIndex, int size){
+        if(chunkIndex < memory.length){
+            int prevSizeBytes = Integer.BYTES;
+            int chunkSizeBytes = prevSizeBytes;
+            int lastIndex = chunkIndex + prevSizeBytes + chunkSizeBytes /*+ 1 (is free flag byte) - 1 (start index)*/ + size;
+            return lastIndex < memory.length;
+        }
+        return false;
     }
 }
