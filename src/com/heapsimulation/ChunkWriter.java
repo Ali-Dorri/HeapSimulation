@@ -7,11 +7,11 @@ public class ChunkWriter {
         this.memory = memory;
     }
 
-    public void setSize(int chunkIndex, int size){
+    public void setDataSize(int chunkIndex, int size){
 
     }
 
-    public void setPrevSize(int chunkIndex, int size){
+    public void setPrevDataSize(int chunkIndex, int size){
 
     }
 
