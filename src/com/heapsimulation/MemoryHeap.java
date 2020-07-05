@@ -5,7 +5,6 @@ import com.heapsimulation.binsearching.IBinSearcher;
 public class MemoryHeap {
 
     private final static int BIN_COUNT = 64;
-    private final static int CHUNK_UNIT = 8;
     private final static int DEFAULT_HEAP_SIZE = 512;
 
     private byte[] memory;
@@ -36,7 +35,7 @@ public class MemoryHeap {
         }
 
         //set prev size for future first chunk
-        writer.setPrevDataSize(0, 0);
+        writer.setPrevRealDataSize(0, 0);
     }
 
     /**
@@ -49,22 +48,22 @@ public class MemoryHeap {
             return false;
         }
 
-        size = ceilToChunkUnit(size);
-        int binIndex = getBinIndex(size);
+        int unitSize = HeapUtility.ceilToChunkUnit(size);
+        int binIndex = getBinIndex(unitSize);
         int freeChunkIndex = -1;
         if(binIndex < binsStartIndices.length){
-            freeChunkIndex = binSearcher.getFreeChunkIndex(size, binsStartIndices, reader);
+            freeChunkIndex = binSearcher.getFreeChunkIndex(unitSize, binsStartIndices, reader);
         }
 
         if(freeChunkIndex > -1 && freeChunkIndex < memory.length){
             //allocate from chosen free chunk
             boolean isFree = reader.isFree(freeChunkIndex);
-            int chunkSize = reader.getDataSize(freeChunkIndex);
+            int chunkSize = reader.getUnitDataSize(freeChunkIndex);
             int nextChunkIndex = reader.getNextChunkIndex(freeChunkIndex);
 
-            if(isFree && size <= chunkSize && nextChunkIndex < memory.length + 1){
+            if(isFree && unitSize <= chunkSize && nextChunkIndex < memory.length + 1){
                 //valid chunk index found
-                allocateFreeChunk(freeChunkIndex, size);
+                allocateFreeChunk(freeChunkIndex, unitSize);
                 return true;
             }
             else{
@@ -73,13 +72,13 @@ public class MemoryHeap {
         }
         else{
             //no suitable free block found, allocate from top
-            boolean enoughSpace = reader.hasEnoughChunkSpace(topIndex, size);
+            boolean enoughSpace = reader.hasEnoughChunkSpace(topIndex, unitSize);
             if(enoughSpace){
-                allocateChunk(topIndex,size);
+                allocateChunk(topIndex, unitSize);
                 topIndex = reader.getNextChunkIndex(topIndex);
                 if(topIndex < memory.length){
                     //set prev size for future next chunk
-                    writer.setPrevDataSize(topIndex, size);
+                    writer.setPrevRealDataSize(topIndex, unitSize);
                 }
             }
 
@@ -96,12 +95,12 @@ public class MemoryHeap {
         if(size <= 0 || topIndex <= 0){
             return false;
         }
-        size = ceilToChunkUnit(size);
+        size = HeapUtility.ceilToChunkUnit(size);
 
         //find proper free chunk
         int memoryIndex = 0;
         while(memoryIndex < memory.length){
-            int chunkSize = reader.getDataSize(memoryIndex);
+            int chunkSize = reader.getUnitDataSize(memoryIndex);
             boolean isFree = reader.isFree(memoryIndex);
             if(!isFree && chunkSize == size){
                 break;
@@ -118,24 +117,24 @@ public class MemoryHeap {
         return false;
     }
 
-    private void allocateFreeChunk(int freeChunkIndex, int requestedSize){
+    private void allocateFreeChunk(int freeChunkIndex, int requestedUnitSize){
         removeFreeChunk(freeChunkIndex);
-        allocateChunk(freeChunkIndex, requestedSize);
+        allocateChunk(freeChunkIndex, requestedUnitSize);
 
         //make remain of free chunk as free chunk
-        int freeChunkSize = reader.getDataSize(freeChunkIndex);
-        int remainSize = freeChunkSize - requestedSize - ChunkReader.getMetaDataSize(false)/*required for new free chunk size, pointer space come from previous allocated free chunk*/;
-        remainSize = floorToChunkUnit(remainSize);
-        if(remainSize > 0){
+        int freeChunkSize = reader.getRealDataSize(freeChunkIndex);
+        int remainSize = freeChunkSize - requestedUnitSize - ChunkReader.getMetaDataSize(false)/*required for new free chunk size
+        , pointer space come from previous allocated free chunk so we need allocated meta data size*/;
+        if(remainSize >= HeapUtility.CHUNK_UNIT){
             int remainFreeChunkIndex = reader.getNextChunkIndex(freeChunkIndex);
-            freeChunk(remainFreeChunkIndex, remainSize);
+            freeChunk(remainFreeChunkIndex, remainSize, freeChunkSize);
         }
     }
 
     private void removeFreeChunk(int chunkIndex){
         int previousFreeChunk = reader.getBackwardFreeIndex(chunkIndex);
-        int chunkSize = reader.getDataSize(chunkIndex);
-        int binIndex = getBinIndex(chunkSize);
+        int unitChunkSize = reader.getUnitDataSize(chunkIndex);
+        int binIndex = getBinIndex(unitChunkSize);
         if(previousFreeChunk == chunkIndex){
             //remove the only free chunk from bin
             binsStartIndices[binIndex] = -1;
@@ -153,25 +152,12 @@ public class MemoryHeap {
     }
 
     private void allocateChunk(int chunkIndex, int size){
-        writer.setDataSize(chunkIndex, size);
+        writer.setRealDataSize(chunkIndex, size);
         writer.setFreeStatus(chunkIndex, false);
     }
 
-    private int ceilToChunkUnit(int size){
-        int remain = size % CHUNK_UNIT;
-        if(remain == 0){
-            return size;
-        }
-        return size + CHUNK_UNIT - remain;
-    }
-
-    private int floorToChunkUnit(int size){
-        int remain = size % CHUNK_UNIT;
-        return size - remain;
-    }
-
-    private int getBinIndex(int chunkSize){
-        return chunkSize / CHUNK_UNIT - 1;
+    private int getBinIndex(int unitChunkSize){
+        return unitChunkSize / HeapUtility.CHUNK_UNIT - 1;
     }
 
     /**
@@ -183,7 +169,7 @@ public class MemoryHeap {
         int chosenIndex = chunkIndex;
         int adjacentChunkIndex = chosenIndex;
         int adjacentCount = 0;
-        int joinedChunksSize = reader.getDataSize(chosenIndex);
+        int joinedChunksSize = reader.getUnitDataSize(chosenIndex);
 
         removeFreeChunk(chosenIndex);
 
@@ -192,7 +178,7 @@ public class MemoryHeap {
         isFreeChunk = reader.isFree(adjacentChunkIndex);
         if(isFreeChunk && adjacentChunkIndex > -1){
             adjacentCount++;
-            joinedChunksSize += reader.getDataSize(adjacentChunkIndex);
+            joinedChunksSize += reader.getRealDataSize(adjacentChunkIndex);
             removeFreeChunk(adjacentChunkIndex);
             chunkIndex = adjacentChunkIndex;
         }
@@ -204,35 +190,38 @@ public class MemoryHeap {
             topIndex = chunkIndex;
             if(topIndex == 0){
                 //whole heap has been freed, set prev size for future first chunk
-                writer.setPrevDataSize(0, 0);
+                writer.setPrevRealDataSize(0, 0);
             }
         }
         else{   //adjacentChunkIndex must be less than memory.length because it can not be more than topIndex
             isFreeChunk = reader.isFree(adjacentChunkIndex);
             if(isFreeChunk){
                 adjacentCount++;
-                joinedChunksSize += reader.getDataSize(adjacentChunkIndex);
+                joinedChunksSize += reader.getRealDataSize(adjacentChunkIndex);
                 removeFreeChunk(adjacentChunkIndex);
             }
 
-            //set joined free chunks size
+            //free chunk
             int mergedSize = chunkSize + joinedChunksSize + adjacentCount * ChunkReader.getMetaDataSize(true);
-            mergedSize = floorToChunkUnit(mergedSize);
-            writer.setDataSize(chunkIndex, mergedSize);
+            int prevRealChunkSize = reader.getPrevRealDataSize(chunkIndex);
+            freeChunk(chunkIndex, mergedSize, prevRealChunkSize);
 
             //update next chunk
             int nextChunkIndex = reader.getNextChunkIndex(chunkIndex);
-            writer.setPrevDataSize(nextChunkIndex, mergedSize);
+            writer.setPrevRealDataSize(nextChunkIndex, mergedSize);
 
-            freeChunk(chunkIndex, mergedSize);
+
         }
     }
 
-    private void freeChunk(int chunkIndex, int chunkSize){
+    private void freeChunk(int chunkIndex, int chunkRealSize, int prevChunkRealSize){
         writer.setFreeStatus(chunkIndex, true);
+        writer.setRealDataSize(chunkIndex, chunkRealSize);
+        writer.setPrevRealDataSize(chunkIndex, prevChunkRealSize);
 
         //add chunk to bin and link it to other free chunks
-        int binIndex = getBinIndex(chunkSize);
+        int chunkUnitSize = HeapUtility.floorToChunkUnit(chunkRealSize);
+        int binIndex = getBinIndex(chunkUnitSize);
         if(binIndex < binsStartIndices.length){
             if(binsStartIndices[binIndex] == -1){
                 //bin is empty
