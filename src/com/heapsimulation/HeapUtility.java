@@ -2,6 +2,7 @@ package com.heapsimulation;
 
 public final class HeapUtility {
     public final static int CHUNK_UNIT = 8;
+    public final static int SMALL_BINS_COUNT = 64;
 
     public static int ceilToChunkUnit(int size){
         int remain = size % CHUNK_UNIT;

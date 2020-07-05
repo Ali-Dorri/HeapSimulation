@@ -116,6 +116,10 @@ public class ChunkReader {
         return lastIndex < memory.length;
     }
 
+    public int getMemoryLength(){
+        return memory.length;
+    }
+
     private void CheckIndex(int chunkIndex){
         if(chunkIndex < 0 || chunkIndex > memory.length){
             String error = String.format("Chunk index must be between 0 and memory length (%d)", memory.length);
