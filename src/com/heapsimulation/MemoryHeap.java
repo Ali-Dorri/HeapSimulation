@@ -124,7 +124,7 @@ public class MemoryHeap {
 
         //make remain of free chunk as free chunk
         int freeChunkSize = reader.getDataSize(freeChunkIndex);
-        int remainSize = freeChunkSize - requestedSize - ChunkReader.getMetaDataSize(false)/*required for new free chunk size, pointer space come from previoud allocated free chunk*/;
+        int remainSize = freeChunkSize - requestedSize - ChunkReader.getMetaDataSize(false)/*required for new free chunk size, pointer space come from previous allocated free chunk*/;
         remainSize = floorToChunkUnit(remainSize);
         if(remainSize > 0){
             int remainFreeChunkIndex = reader.getNextChunkIndex(freeChunkIndex);
@@ -276,5 +276,36 @@ public class MemoryHeap {
         writer.setBackwardFreeIndex(forwardIndex, chunkIndex);
         writer.setBackwardFreeIndex(chunkIndex, backwardIndex);
         writer.setForwardFreeIndex(chunkIndex, forwardIndex);
+    }
+
+    public void PrintAllocatedChunks(){
+        int chunkIndex = 0;
+        while(chunkIndex < topIndex){
+            boolean isFree = reader.isFree(chunkIndex);
+            if(isFree){
+                System.out.print(chunkIndex + " ");
+            }
+
+            chunkIndex = reader.getNextChunkIndex(chunkIndex);
+        }
+
+        System.out.println();
+    }
+
+    public void PrintBins(){
+        for(int i = 0; i < binsStartIndices.length; i++){
+            if(binsStartIndices[i] > -1){
+                int freeChunkCount = 1;
+                int initialChunkIndex = binsStartIndices[i];
+                int freeChunkIndex = reader.getForwardFreeIndex(initialChunkIndex);
+                while(freeChunkIndex != initialChunkIndex){
+                    freeChunkCount++;
+                    freeChunkIndex = reader.getForwardFreeIndex(freeChunkIndex);
+                }
+
+                String message = String.format("bin%1$ %2$", i + 1, freeChunkCount);
+                System.out.println(message);
+            }
+        }
     }
 }
