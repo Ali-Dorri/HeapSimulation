@@ -18,9 +18,13 @@ public class ChunkWriter {
     private ChunkReader reader;
 
     public ChunkWriter(byte[] memory){
+        this(memory, new ChunkReader(memory));
+    }
+
+    public ChunkWriter(byte[] memory, ChunkReader reader){
         this.memory = memory;
         intBuffer = ByteBuffer.allocate(Integer.BYTES);
-        reader = new ChunkReader(memory);
+        this.reader = reader;
     }
 
     public void setRealDataSize(int chunkIndex, int realSize){
@@ -30,17 +34,9 @@ public class ChunkWriter {
         FillMemoryByInt(sizeIndex, chunkSize);
     }
 
-    public void setPrevRealDataSize(int chunkIndex, int realSize){
+    public void setPrevRealDataSize(int chunkIndex, int realSize, boolean isPrevChunkFree){
         CheckIndex(chunkIndex);
-        int prevChunkIndex = reader.getPrevChunkIndex(chunkIndex);
-        int prevChunkSize;
-        if(prevChunkIndex > -1){
-            prevChunkSize = realSize + reader.getMetaDataSize(prevChunkIndex);
-        }
-        else{
-            prevChunkSize = 0;
-        }
-
+        int prevChunkSize = realSize + ChunkReader.getMetaDataSize(isPrevChunkFree);
         FillMemoryByInt(chunkIndex, prevChunkSize);
     }
 
@@ -70,7 +66,7 @@ public class ChunkWriter {
     }
 
     private void FillMemoryByInt(int memoryIndex, int value){
-        intBuffer.putInt(value);
+        intBuffer.putInt(0, value);
         for(int i = 0; i < Integer.BYTES; i++){
             memory[memoryIndex + i] = intBuffer.get(i);
         }

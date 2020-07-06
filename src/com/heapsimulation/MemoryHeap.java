@@ -1,6 +1,7 @@
 package com.heapsimulation;
 
-import com.heapsimulation.binmanaging.IBinManager;
+import com.heapsimulation.bincollection.*;
+import com.heapsimulation.binmanaging.*;
 
 public class MemoryHeap {
 
@@ -24,10 +25,10 @@ public class MemoryHeap {
         memory = new byte[size];
         binManager = searcher;
         reader = new ChunkReader(memory);
-        writer = new ChunkWriter(memory);
+        writer = new ChunkWriter(memory, reader);
 
         //set prev size for future first chunk
-        writer.setPrevRealDataSize(0, 0);
+        writer.setPrevRealDataSize(0, 0, false);
     }
 
     public int getTopIndex(){
@@ -39,7 +40,7 @@ public class MemoryHeap {
      * @param size requested size
      * @return Return true if succeeded, return false otherwise.
      */
-    public boolean mAlloc(int size)  {
+    public boolean malloc(int size)  {
         if(size <= 0){
             return false;
         }
@@ -74,7 +75,7 @@ public class MemoryHeap {
                 topIndex = reader.getNextChunkIndex(topIndex);
                 if(topIndex < memory.length){
                     //set prev size for future next chunk
-                    writer.setPrevRealDataSize(topIndex, unitSize);
+                    writer.setPrevRealDataSize(topIndex, unitSize, false);
                 }
             }
 
@@ -133,7 +134,7 @@ public class MemoryHeap {
 
         if(previousFreeChunk == chunkIndex){
             //remove the only free chunk from bin
-            binManager.setStartFreeChunkIndex(chunkUnitSize, IBinManager.NO_CHUNK);
+            binManager.setStartFreeChunkIndex(chunkUnitSize, IBinCollection.NO_CHUNK);
         }
         else{
             int nextFreeChunk = reader.getForwardFreeIndex(chunkIndex);
@@ -148,8 +149,8 @@ public class MemoryHeap {
     }
 
     private void allocateChunk(int chunkIndex, int size){
-        writer.setRealDataSize(chunkIndex, size);
         writer.setFreeStatus(chunkIndex, false);
+        writer.setRealDataSize(chunkIndex, size);
     }
 
     /**
@@ -182,7 +183,7 @@ public class MemoryHeap {
             topIndex = chunkIndex;
             if(topIndex == 0){
                 //whole heap has been freed, set prev size for future first chunk
-                writer.setPrevRealDataSize(0, 0);
+                writer.setPrevRealDataSize(0, 0, false);
             }
         }
         else{   //adjacentChunkIndex must be less than memory.length because it can not be more than topIndex
@@ -200,7 +201,7 @@ public class MemoryHeap {
 
             //update next chunk
             int nextChunkIndex = reader.getNextChunkIndex(chunkIndex);
-            writer.setPrevRealDataSize(nextChunkIndex, mergedSize);
+            writer.setPrevRealDataSize(nextChunkIndex, mergedSize, true);
 
 
         }
@@ -209,7 +210,6 @@ public class MemoryHeap {
     private void freeChunk(int chunkIndex, int chunkRealSize, int prevChunkRealSize){
         writer.setFreeStatus(chunkIndex, true);
         writer.setRealDataSize(chunkIndex, chunkRealSize);
-        writer.setPrevRealDataSize(chunkIndex, prevChunkRealSize);
 
         //add chunk to bin and link it to other free chunks
         int chunkUnitSize = HeapUtility.floorToChunkUnit(chunkRealSize);
@@ -263,7 +263,7 @@ public class MemoryHeap {
         int chunkIndex = 0;
         while(chunkIndex < topIndex){
             boolean isFree = reader.isFree(chunkIndex);
-            if(isFree){
+            if(!isFree){
                 System.out.print(chunkIndex + " ");
             }
 
@@ -274,11 +274,13 @@ public class MemoryHeap {
     }
 
     public void PrintBins(){
-        int maxChunkSize = HeapUtility.CHUNK_UNIT * HeapUtility.SMALL_BINS_COUNT;
-        for(int chunkUnitSize = 0; chunkUnitSize < maxChunkSize; chunkUnitSize+= HeapUtility.CHUNK_UNIT){
+        for(int i = 0; i < HeapUtility.SMALL_BINS_COUNT; i++){
+            int chunkUnitSize = (i + 1) * HeapUtility.CHUNK_UNIT;
             int freeChunkCount = binManager.getBinFreeChunkCount(chunkUnitSize, reader);
-            String message = String.format("bin%1$ %2$", chunkUnitSize + 1, freeChunkCount);
-            System.out.println(message);
+            if(freeChunkCount > 0){
+                String message = String.format("bin%1$d %2$d", i + 1, freeChunkCount);
+                System.out.println(message);
+            }
         }
     }
 }

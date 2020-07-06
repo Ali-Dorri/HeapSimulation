@@ -54,7 +54,7 @@ public class ChunkReader {
         CheckIndex(chunkIndex);
         int sizeIndex = chunkIndex + Integer.BYTES; //after prevSize bytes
         FillIntBuffer(sizeIndex);
-        return intBuffer.getInt() - getMetaDataSize(chunkIndex);
+        return intBuffer.getInt(0) - getMetaDataSize(chunkIndex);
     }
 
     /**
@@ -74,7 +74,7 @@ public class ChunkReader {
     public int getPrevRealDataSize(int chunkIndex){
         CheckIndex(chunkIndex);
         FillIntBuffer(chunkIndex);
-        return intBuffer.getInt() - getMetaDataSize(chunkIndex);
+        return intBuffer.getInt(0) - getMetaDataSize(chunkIndex);
     }
 
     public boolean isFree(int chunkIndex){
@@ -87,27 +87,27 @@ public class ChunkReader {
         CheckIndex(chunkIndex);
         int sizeIndex = chunkIndex + Integer.BYTES; //after prevSize bytes
         FillIntBuffer(sizeIndex);
-        return chunkIndex + intBuffer.getInt();
+        return chunkIndex + intBuffer.getInt(0);
     }
 
     public int getPrevChunkIndex(int chunkIndex){
         CheckIndex(chunkIndex);
         FillIntBuffer(chunkIndex);
-        return chunkIndex - intBuffer.getInt();
+        return chunkIndex - intBuffer.getInt(0);
     }
 
     public int getForwardFreeIndex(int chunkIndex){
         CheckIndex(chunkIndex);
         int forwardPointerIndex = chunkIndex + 2 * Integer.BYTES + 1;   //after prevSize, size and isFree bytes
         FillIntBuffer(forwardPointerIndex);
-        return intBuffer.getInt();
+        return intBuffer.getInt(0);
     }
 
     public int getBackwardFreeIndex(int chunkIndex){
         CheckIndex(chunkIndex);
         int backwardPointerIndex = chunkIndex + 3 * Integer.BYTES + 1;  //after prevSize, size, isFree and forwardPointer bytes
         FillIntBuffer(backwardPointerIndex);
-        return intBuffer.getInt();
+        return intBuffer.getInt(0);
     }
 
     public boolean hasEnoughChunkSpace(int chunkIndex, int size){
@@ -122,7 +122,7 @@ public class ChunkReader {
 
     private void CheckIndex(int chunkIndex){
         if(chunkIndex < 0 || chunkIndex > memory.length){
-            String error = String.format("Chunk index must be between 0 and memory length (%d)", memory.length);
+            String error = String.format("Chunk index %1$d must be between 0 and memory length (%2$d)", chunkIndex, memory.length);
             throw new IndexOutOfBoundsException(error);
         }
     }
