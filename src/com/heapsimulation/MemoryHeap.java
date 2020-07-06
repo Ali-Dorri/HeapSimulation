@@ -96,7 +96,7 @@ public class MemoryHeap {
 
         //find proper free chunk
         int memoryIndex = 0;
-        while(memoryIndex < memory.length){
+        while(memoryIndex < topIndex){
             int chunkSize = reader.getUnitDataSize(memoryIndex);
             boolean isFree = reader.isFree(memoryIndex);
             if(!isFree && chunkSize == size){
@@ -106,7 +106,7 @@ public class MemoryHeap {
             memoryIndex = reader.getNextChunkIndex(memoryIndex);
         }
 
-        if(memoryIndex < memory.length){
+        if(memoryIndex < topIndex){
             mergeFreeChunksAndAddToBin(memoryIndex);
             return true;
         }
