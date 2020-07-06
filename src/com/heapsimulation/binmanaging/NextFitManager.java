@@ -3,7 +3,7 @@ package com.heapsimulation.binmanaging;
 import com.heapsimulation.base.*;
 
 public class NextFitManager implements IBinManager {
-    private int currentChosenChunk = NO_CHUNK;
+    private int currentChosenChunk = 0;
     private int startFreeChunk = NO_CHUNK;
 
     public NextFitManager(){
@@ -21,8 +21,8 @@ public class NextFitManager implements IBinManager {
     }
 
     @Override
-    public void setStartFreeChunkIndex(int chunkSize, int index) {
-        startFreeChunk = index;
+    public void setStartFreeChunkIndex(int chunkSize, int freeChunkIndex) {
+        startFreeChunk = freeChunkIndex;
     }
 
     @Override
@@ -52,6 +52,7 @@ public class NextFitManager implements IBinManager {
 
     @Override
     public int getFreeChunkIndex(int size, ChunkReader chunkReader, MemoryHeap heap) {
+        size = HeapUtility.ceilToChunkUnit(size);
         int prevChosenChunk = currentChosenChunk;
         boolean isFree = chunkReader.isFree(currentChosenChunk);
         if(!isFree){

@@ -3,10 +3,10 @@ package com.heapsimulation.binmanaging;
 import com.heapsimulation.base.*;
 import com.heapsimulation.bincollection.*;
 
-public class FirstFitManager implements IBinManager {
+public class BestFitManager implements IBinManager {
     private SmallBinsArray array;
 
-    public FirstFitManager(){
+    public BestFitManager(){
         array = new SmallBinsArray();
     }
 
@@ -33,14 +33,16 @@ public class FirstFitManager implements IBinManager {
     @Override
     public int getFreeChunkIndex(int size, ChunkReader chunkReader, MemoryHeap heap) {
         size = HeapUtility.ceilToChunkUnit(size);
-        int chosenChunkIndex = NO_CHUNK;
         int memoryLength = chunkReader.getMemoryLength();
-        int minimumBinIndex = size / HeapUtility.CHUNK_UNIT - 1;
+        int chosenChunkIndex = NO_CHUNK;
         int[] binStartIndices = array.getBinStartIndices();
-        for(int i = minimumBinIndex; i < binStartIndices.length; i++){
+        for(int i = 0; i < binStartIndices.length; i++){
             if(binStartIndices[i] > -1 && binStartIndices[i] < memoryLength){
-                chosenChunkIndex = binStartIndices[i];
-                break;
+                int chunkSize = chunkReader.getUnitDataSize(binStartIndices[i]);
+                if(chunkSize >= size){
+                    chosenChunkIndex = binStartIndices[i];
+                    break;
+                }
             }
         }
 

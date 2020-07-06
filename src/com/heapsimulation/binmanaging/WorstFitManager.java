@@ -33,9 +33,10 @@ public class WorstFitManager implements IBinManager {
     @Override
     public int getFreeChunkIndex(int size, ChunkReader chunkReader, MemoryHeap heap) {
         int chosenChunkIndex = NO_CHUNK;
+        int memoryLength = chunkReader.getMemoryLength();
         int[] binStartIndices = array.getBinStartIndices();
-        for(int i = binStartIndices.length; i > -1; i--){
-            if(binStartIndices[i] > -1){
+        for(int i = binStartIndices.length - 1; i > -1; i--){
+            if(binStartIndices[i] > -1 && binStartIndices[i] < memoryLength) {
                 int chunkSize = chunkReader.getUnitDataSize(binStartIndices[i]);
                 if(chunkSize >= size){
                     chosenChunkIndex = binStartIndices[i];

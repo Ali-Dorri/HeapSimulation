@@ -13,17 +13,17 @@ public class MemoryHeap {
     private ChunkReader reader;
     private ChunkWriter writer;
 
-    public MemoryHeap(IBinManager searcher){
-        this(DEFAULT_HEAP_SIZE, searcher);
+    public MemoryHeap(IBinManager binManager){
+        this(DEFAULT_HEAP_SIZE, binManager);
     }
 
-    public MemoryHeap(int size, IBinManager searcher){
+    public MemoryHeap(int size, IBinManager binManager){
         if(size < 0){
             throw new IndexOutOfBoundsException("Heap size can not be negative");
         }
 
         memory = new byte[size];
-        binManager = searcher;
+        this.binManager = binManager;
         reader = new ChunkReader(memory);
         writer = new ChunkWriter(memory);
 
@@ -266,7 +266,7 @@ public class MemoryHeap {
     /**
      * Print first byte index of allocated chunks and top index on the end.
      */
-    public void PrintAllocatedChunks(){
+    public void printAllocatedChunks(){
         boolean allocatedChunkExists = false;
         int chunkIndex = 0;
         while(chunkIndex < topIndex){
@@ -287,7 +287,7 @@ public class MemoryHeap {
         }
     }
 
-    public void PrintBins(){
+    public void printBins(){
         int totalFreeChunksCount = 0;
         for(int i = 0; i < HeapUtility.SMALL_BINS_COUNT; i++){
             int chunkUnitSize = (i + 1) * HeapUtility.CHUNK_UNIT;
