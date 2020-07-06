@@ -15,28 +15,22 @@ import java.nio.ByteBuffer;
 public class ChunkWriter {
     private byte[] memory;
     private ByteBuffer intBuffer;
-    private ChunkReader reader;
 
     public ChunkWriter(byte[] memory){
-        this(memory, new ChunkReader(memory));
-    }
-
-    public ChunkWriter(byte[] memory, ChunkReader reader){
         this.memory = memory;
         intBuffer = ByteBuffer.allocate(Integer.BYTES);
-        this.reader = reader;
     }
 
     public void setRealDataSize(int chunkIndex, int realSize){
         CheckIndex(chunkIndex);
         int sizeIndex = chunkIndex + Integer.BYTES; //after prevSize bytes
-        int chunkSize = realSize + reader.getMetaDataSize(chunkIndex);
+        int chunkSize = realSize + ChunkReader.getMetaDataSize();
         FillMemoryByInt(sizeIndex, chunkSize);
     }
 
-    public void setPrevRealDataSize(int chunkIndex, int realSize, boolean isPrevChunkFree){
+    public void setPrevRealDataSize(int chunkIndex, int realSize){
         CheckIndex(chunkIndex);
-        int prevChunkSize = realSize + ChunkReader.getMetaDataSize(isPrevChunkFree);
+        int prevChunkSize = realSize + ChunkReader.getMetaDataSize();
         FillMemoryByInt(chunkIndex, prevChunkSize);
     }
 

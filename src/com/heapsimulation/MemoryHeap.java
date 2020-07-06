@@ -25,10 +25,10 @@ public class MemoryHeap {
         memory = new byte[size];
         binManager = searcher;
         reader = new ChunkReader(memory);
-        writer = new ChunkWriter(memory, reader);
+        writer = new ChunkWriter(memory);
 
         //set prev size for future first chunk
-        writer.setPrevRealDataSize(0, 0, false);
+        writer.setPrevRealDataSize(0, 0);
     }
 
     public int getTopIndex(){
@@ -75,7 +75,7 @@ public class MemoryHeap {
                 topIndex = reader.getNextChunkIndex(topIndex);
                 if(topIndex < memory.length){
                     //set prev size for future next chunk
-                    writer.setPrevRealDataSize(topIndex, unitSize, false);
+                    writer.setPrevRealDataSize(topIndex, unitSize);
                 }
             }
 
@@ -107,7 +107,7 @@ public class MemoryHeap {
         }
 
         if(memoryIndex < memory.length){
-            mergeFreeChunksAndAddToBin(memoryIndex, size);
+            mergeFreeChunksAndAddToBin(memoryIndex);
             return true;
         }
 
@@ -120,11 +120,10 @@ public class MemoryHeap {
 
         //make remain of free chunk as free chunk
         int freeChunkSize = reader.getRealDataSize(freeChunkIndex);
-        int remainSize = freeChunkSize - requestedUnitSize - ChunkReader.getMetaDataSize(false)/*required for new free chunk size
-        , pointer space come from previous allocated free chunk so we need allocated meta data size*/;
+        int remainSize = freeChunkSize - requestedUnitSize - ChunkReader.getMetaDataSize()/*required for new free chunk size*/;
         if(remainSize >= HeapUtility.CHUNK_UNIT){
             int remainFreeChunkIndex = reader.getNextChunkIndex(freeChunkIndex);
-            freeChunk(remainFreeChunkIndex, remainSize, freeChunkSize);
+            freeChunk(remainFreeChunkIndex, remainSize);
         }
     }
 
@@ -157,23 +156,25 @@ public class MemoryHeap {
      * Join the adjacent free chunks to make bigger free chunk and add the first or merged free chunk to bin.
      * @param chunkIndex Index of the free chunk
      */
-    private void mergeFreeChunksAndAddToBin(int chunkIndex, int chunkSize){
+    private void mergeFreeChunksAndAddToBin(int chunkIndex){
         boolean isFreeChunk;
         int chosenIndex = chunkIndex;
         int adjacentChunkIndex = chosenIndex;
         int adjacentCount = 0;
-        int joinedChunksSize = reader.getUnitDataSize(chosenIndex);
+        int joinedChunksSize = reader.getRealDataSize(chosenIndex);
 
         removeFreeChunk(chosenIndex);
 
         //check previous chunk
         adjacentChunkIndex = reader.getPrevChunkIndex(chosenIndex);
-        isFreeChunk = reader.isFree(adjacentChunkIndex);
-        if(isFreeChunk && adjacentChunkIndex > -1){
-            adjacentCount++;
-            joinedChunksSize += reader.getRealDataSize(adjacentChunkIndex);
-            removeFreeChunk(adjacentChunkIndex);
-            chunkIndex = adjacentChunkIndex;
+        if(adjacentChunkIndex > -1){
+            isFreeChunk = reader.isFree(adjacentChunkIndex);
+            if(isFreeChunk){
+                adjacentCount++;
+                joinedChunksSize += reader.getRealDataSize(adjacentChunkIndex);
+                removeFreeChunk(adjacentChunkIndex);
+                chunkIndex = adjacentChunkIndex;
+            }
         }
 
         //check next chunk
@@ -183,7 +184,7 @@ public class MemoryHeap {
             topIndex = chunkIndex;
             if(topIndex == 0){
                 //whole heap has been freed, set prev size for future first chunk
-                writer.setPrevRealDataSize(0, 0, false);
+                writer.setPrevRealDataSize(0, 0);
             }
         }
         else{   //adjacentChunkIndex must be less than memory.length because it can not be more than topIndex
@@ -195,19 +196,16 @@ public class MemoryHeap {
             }
 
             //free chunk
-            int mergedSize = chunkSize + joinedChunksSize + adjacentCount * ChunkReader.getMetaDataSize(true);
-            int prevRealChunkSize = reader.getPrevRealDataSize(chunkIndex);
-            freeChunk(chunkIndex, mergedSize, prevRealChunkSize);
+            int mergedSize = joinedChunksSize + adjacentCount * ChunkReader.getMetaDataSize();
+            freeChunk(chunkIndex, mergedSize);
 
             //update next chunk
             int nextChunkIndex = reader.getNextChunkIndex(chunkIndex);
-            writer.setPrevRealDataSize(nextChunkIndex, mergedSize, true);
-
-
+            writer.setPrevRealDataSize(nextChunkIndex, mergedSize);
         }
     }
 
-    private void freeChunk(int chunkIndex, int chunkRealSize, int prevChunkRealSize){
+    private void freeChunk(int chunkIndex, int chunkRealSize){
         writer.setFreeStatus(chunkIndex, true);
         writer.setRealDataSize(chunkIndex, chunkRealSize);
 

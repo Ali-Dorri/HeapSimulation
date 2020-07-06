@@ -21,19 +21,9 @@ public class ChunkReader {
         intBuffer = ByteBuffer.allocate(Integer.BYTES);
     }
 
-    public static int getMetaDataSize(boolean isFree){
-        if(isFree){
-            return Integer.BYTES * 4 + 1;   //prevSize, size, isFree flag, forward pointer, backward pointer
-        }
-        else{
-            return Integer.BYTES * 2 + 1;   //prevSize, size, isFree flag
-        }
-    }
-
-    public int getMetaDataSize(int chunkIndex){
-        CheckIndex(chunkIndex);
-        boolean isFree = isFree(chunkIndex);
-        return getMetaDataSize(isFree);
+    public static int getMetaDataSize(){
+        return Integer.BYTES * 2 + 1;   //prevSize, size, isFree flag
+        //for free chunks the pointers space is shared with data space so it is not included in meta data size
     }
 
     /**
@@ -54,7 +44,7 @@ public class ChunkReader {
         CheckIndex(chunkIndex);
         int sizeIndex = chunkIndex + Integer.BYTES; //after prevSize bytes
         FillIntBuffer(sizeIndex);
-        return intBuffer.getInt(0) - getMetaDataSize(chunkIndex);
+        return intBuffer.getInt(0) - getMetaDataSize();
     }
 
     /**
@@ -74,7 +64,7 @@ public class ChunkReader {
     public int getPrevRealDataSize(int chunkIndex){
         CheckIndex(chunkIndex);
         FillIntBuffer(chunkIndex);
-        return intBuffer.getInt(0) - getMetaDataSize(chunkIndex);
+        return intBuffer.getInt(0) - getMetaDataSize();
     }
 
     public boolean isFree(int chunkIndex){
@@ -112,7 +102,7 @@ public class ChunkReader {
 
     public boolean hasEnoughChunkSpace(int chunkIndex, int size){
         CheckIndex(chunkIndex);
-        int lastIndex = chunkIndex + getMetaDataSize(false) + size - 1/*(start index)*/;
+        int lastIndex = chunkIndex + getMetaDataSize() + size - 1/*(start index)*/;
         return lastIndex < memory.length;
     }
 
