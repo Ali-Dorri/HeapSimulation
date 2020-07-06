@@ -114,16 +114,20 @@ public class MemoryHeap {
         return false;
     }
 
-    private void allocateFreeChunk(int freeChunkIndex, int requestedUnitSize){
+    private  void allocateFreeChunk(int freeChunkIndex, int requestedUnitSize){
         removeFreeChunk(freeChunkIndex);
-        allocateChunk(freeChunkIndex, requestedUnitSize);
 
-        //make remain of free chunk as free chunk
+        //try to make remain of free chunk as free chunk
         int freeChunkSize = reader.getRealDataSize(freeChunkIndex);
         int remainSize = freeChunkSize - requestedUnitSize - ChunkReader.getMetaDataSize()/*required for new free chunk size*/;
         if(remainSize >= HeapUtility.CHUNK_UNIT){
+            allocateChunk(freeChunkIndex, requestedUnitSize);
             int remainFreeChunkIndex = reader.getNextChunkIndex(freeChunkIndex);
             freeChunk(remainFreeChunkIndex, remainSize);
+        }
+        else{
+            //allocate chunk with it's internal fragmentation (if exists)
+            allocateChunk(freeChunkIndex, freeChunkSize);
         }
     }
 
@@ -133,7 +137,9 @@ public class MemoryHeap {
 
         if(previousFreeChunk == chunkIndex){
             //remove the only free chunk from bin
-            binManager.setStartFreeChunkIndex(chunkUnitSize, IBinCollection.NO_CHUNK);
+            if(chunkIndex == binManager.getStartFreeChunkIndex(chunkUnitSize)){
+                binManager.setStartFreeChunkIndex(chunkUnitSize, IBinCollection.NO_CHUNK);
+            }
         }
         else{
             int nextFreeChunk = reader.getForwardFreeIndex(chunkIndex);
@@ -257,28 +263,44 @@ public class MemoryHeap {
         writer.setForwardFreeIndex(chunkIndex, forwardIndex);
     }
 
+    /**
+     * Print first byte index of allocated chunks and top index on the end.
+     */
     public void PrintAllocatedChunks(){
+        boolean allocatedChunkExists = false;
         int chunkIndex = 0;
         while(chunkIndex < topIndex){
             boolean isFree = reader.isFree(chunkIndex);
             if(!isFree){
+                allocatedChunkExists = true;
                 System.out.print(chunkIndex + " ");
             }
 
             chunkIndex = reader.getNextChunkIndex(chunkIndex);
         }
 
-        System.out.println();
+        if(allocatedChunkExists){
+            System.out.println(topIndex);
+        }
+        else{
+            System.out.println("No allocated chunk exist");
+        }
     }
 
     public void PrintBins(){
+        int totalFreeChunksCount = 0;
         for(int i = 0; i < HeapUtility.SMALL_BINS_COUNT; i++){
             int chunkUnitSize = (i + 1) * HeapUtility.CHUNK_UNIT;
             int freeChunkCount = binManager.getBinFreeChunkCount(chunkUnitSize, reader);
+            totalFreeChunksCount +=freeChunkCount;
             if(freeChunkCount > 0){
                 String message = String.format("bin%1$d %2$d", i + 1, freeChunkCount);
                 System.out.println(message);
             }
+        }
+
+        if(totalFreeChunksCount == 0){
+            System.out.println("No bin exist");
         }
     }
 }
