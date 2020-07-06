@@ -1,6 +1,6 @@
 package com.heapsimulation.binmanaging;
 
-import com.heapsimulation.*;
+import com.heapsimulation.base.*;
 import com.heapsimulation.bincollection.*;
 
 public interface IBinManager extends IBinCollection {

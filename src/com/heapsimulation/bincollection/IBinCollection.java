@@ -1,6 +1,6 @@
 package com.heapsimulation.bincollection;
 
-import com.heapsimulation.*;
+import com.heapsimulation.base.*;
 
 public interface IBinCollection {
     public static final int NO_CHUNK = -1;

@@ -1,4 +1,4 @@
-package com.heapsimulation;
+package com.heapsimulation.base;
 
 public final class HeapUtility {
     public final static int CHUNK_UNIT = 8;

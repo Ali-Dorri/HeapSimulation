@@ -1,7 +1,6 @@
 package com.heapsimulation.bincollection;
 
-import com.heapsimulation.*;
-import com.heapsimulation.*;
+import com.heapsimulation.base.*;
 
 public class SmallBinsArray implements IBinCollection {
     private int[] binStartIndices;

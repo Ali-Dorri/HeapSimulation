@@ -1,4 +1,4 @@
-package com.heapsimulation;
+package com.heapsimulation.base;
 
 import java.nio.ByteBuffer;
 

@@ -1,4 +1,4 @@
-package com.heapsimulation;
+package com.heapsimulation.base;
 
 import com.heapsimulation.bincollection.*;
 import com.heapsimulation.binmanaging.*;

@@ -1,6 +1,6 @@
 package com.heapsimulation.binmanaging;
 
-import com.heapsimulation.*;
+import com.heapsimulation.base.*;
 
 public class NextFitManager implements IBinManager {
     private int currentChosenChunk = NO_CHUNK;
